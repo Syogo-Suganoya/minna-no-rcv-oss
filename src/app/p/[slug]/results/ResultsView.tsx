@@ -15,6 +15,7 @@ import {
 } from "@phosphor-icons/react";
 import type { PollOption } from "@/server/polls";
 import type { RcvTallyResult } from "@/features/rcv/tally";
+import { rcvInsight } from "@/features/rcv/insight";
 import { RcvReplay } from "@/features/rcv/replay/RcvReplay";
 
 const fmt = (v: number) => v.toLocaleString();
@@ -236,6 +237,8 @@ export default function ResultsView({ slug, title, options, result, ballotCount,
   const finalValid = S.total - last.exhausted;
   // 最後の1候補で決着した極端なケース（全票が順位切れ等）では過半数表記を避ける。
   const byMajority = finalValid > 0 && winVotes >= last.majority;
+  // 候補2つ・1回目で過半数なら多数決と同じ結果。RCV の効果を誇張しないよう文言を出し分ける。
+  const insight = rcvInsight(S, options.length);
 
   // ── 受付中の途中経過（暫定・15秒ごとに自動更新）────
   useEffect(() => {
@@ -426,7 +429,24 @@ export default function ResultsView({ slug, title, options, result, ballotCount,
         <div className="flex items-start gap-2">
           <CheckCircle size={18} className="mt-0.5 flex-none text-tm-teal-hover" />
           <span className="text-[13px] leading-[1.75] text-tm-gray-700">
-            1位に入れた候補が敗退しても票は無効にならず、次の順位の候補の票として数えられ続けます。より多くの参加者の意思が結果に反映されます。
+            {insight.kind === "twoOptions" ? (
+              <>
+                候補が2つのときは、RCV でも1位票の多数決と<b>同じ結果</b>になります。RCV が力を発揮するのは、候補が3つ以上あって似た候補に票が割れるときです。
+              </>
+            ) : insight.kind === "firstRound" ? (
+              <>
+                今回は1位票だけで過半数に届いたので、多数決と<b>同じ結果</b>でした。票が割れて過半数に届かないときに、RCV は次の順位の票を数えて決着をつけます。
+              </>
+            ) : (
+              <>
+                {insight.kind === "overturned" && (
+                  <>
+                    1位票だけなら「<b>{name(insight.leaderId)}</b>」が選ばれていました。
+                  </>
+                )}
+                1位に入れた候補が敗退しても票は無効にならず、次の順位の候補の票として数えられ続けます。より多くの参加者の意思が結果に反映されます。
+              </>
+            )}
           </span>
         </div>
       </div>

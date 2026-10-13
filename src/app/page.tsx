@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChartBar, HandTap, LinkSimple, ListNumbers } from "@phosphor-icons/react/dist/ssr";
 import { BokehBackdrop } from "@/components/BokehBackdrop";
 import { HeroCta, LiveTallyDemo } from "@/features/top/LiveTallyDemo";
+import { RcvFitGuide } from "@/features/top/RcvFitGuide";
 import { WhyRcvStory } from "@/features/top/WhyRcvStory";
 
 /**
@@ -92,6 +93,11 @@ export default function Home() {
       {/* ── セカンドビュー：Why RCV? ──── */}
       <div className={CONTAINER}>
         <WhyRcvStory />
+      </div>
+
+      {/* ── 目指していること・効く場面と効かない場面 ──── */}
+      <div className={CONTAINER}>
+        <RcvFitGuide />
       </div>
 
       {/* ── 使い方 3ステップ ──── */}
