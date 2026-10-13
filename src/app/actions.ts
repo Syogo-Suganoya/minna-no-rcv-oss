@@ -13,6 +13,7 @@ import {
   closePoll,
   ensureClosedIfDue,
   publishResultsNow,
+  updateOptionDisplay,
   getFinalResult,
   logSubmit,
   LIMITS,
@@ -26,6 +27,8 @@ export type CreateActionInput = {
   description?: string;
   options: string[];
   showLiveCount: boolean;
+  /** 候補を投票者ごとにランダムな順で見せるか（未指定ならランダム）。 */
+  shuffleOptions?: boolean;
   /** 締切（ISO 8601）。未指定・null なら締切なし（管理URLから手動で締め切る）。 */
   closeAt?: string | null;
   /** 結果公開（ISO 8601）。未指定・null なら締切と同時に公開する。 */
@@ -56,6 +59,7 @@ export async function createPollAction(
       description: input?.description,
       options: input?.options,
       showLiveCount: input?.showLiveCount !== false,
+      shuffleOptions: input?.shuffleOptions !== false,
       closeAt: input?.closeAt ?? null,
       resultsOpenAt: input?.resultsOpenAt ?? null,
       createdIpHash: ipHash,
@@ -162,4 +166,35 @@ export async function publishResultsAction(slug: string, key: string): Promise<v
   const pub = await getPollBySlug(slug);
   if (pub) await getFinalResult(pub.poll);
   redirect(`/p/${slug}/results`);
+}
+
+/**
+ * 候補の表示順とランダム表示の有無を変える（管理者）。受付中・締切後を問わず変えられる
+ * （表示順は集計に影響しないため）。管理ページに留まったまま保存したいので、
+ * ほかの管理操作と違って redirect せず結果を返す。
+ */
+export async function updateOptionDisplayAction(
+  slug: string,
+  key: string,
+  optionIds: string[],
+  shuffleOptions: boolean
+): Promise<{ error: string } | undefined> {
+  // 型は Server Action 境界では保証されない（直接 POST できる）。実行時に必ず検証する。
+  if (
+    !Array.isArray(optionIds) ||
+    optionIds.length > LIMITS.options ||
+    !optionIds.every((id) => typeof id === "string" && id.length <= 64) ||
+    typeof shuffleOptions !== "boolean"
+  ) {
+    return { error: "入力の形式が不正です" };
+  }
+  const row = await getPollRowForAdmin(slug);
+  if (!row) return { error: "投票が見つかりません" };
+  if (typeof key !== "string" || !verifyAdminKey(key, row.admin_key_hash)) {
+    return { error: "管理キーが正しくありません" };
+  }
+  const ok = await updateOptionDisplay(row.id, optionIds, shuffleOptions);
+  if (!ok) {
+    return { error: "候補の一覧が変わっています。ページを読み込み直してください" };
+  }
 }

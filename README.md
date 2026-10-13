@@ -73,6 +73,7 @@ supabase/migrations/
   ..._rate_limit.sql            レート制限用の列・インデックス
   ..._retention.sql             purge_expired_data（保存期間の削除関数）
   ..._results_open_at.sql       結果公開時刻（締切と分離）
+  ..._option_display_order.sql 候補の表示順（投票者ごとのランダム表示・公開後の並べ替え）
 ```
 
 ## セットアップ

@@ -118,7 +118,9 @@ export default async function VotePage({
       {/* ── 「あなたの投票」ミント箱 ──── */}
       <VoteClient
         slug={slug}
+        pollId={poll.id}
         options={options}
+        shuffleOptions={poll.shuffle_options}
         submittedRankings={myBallot}
         showLiveCount={poll.show_live_count}
       />

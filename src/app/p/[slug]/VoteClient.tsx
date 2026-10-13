@@ -21,6 +21,7 @@ import {
   getSelectionAnnouncement,
   type SelectionFocusTarget,
 } from "@/features/rcv/voteSelection";
+import { seededShuffle } from "@/features/rcv/shuffle";
 import {
   ArrowRight,
   ChartBar,
@@ -48,9 +49,39 @@ function VoteBox({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * 候補のランダム表示に使う、このブラウザ固有の種（localStorage）。
+ *
+ * voter_key の Cookie は投票を送るまで発行されない（lib/voter.ts の Cookie ゲート）ので、
+ * 初めて開いた人の並びをリロードしても保つには、別にブラウザ側で種を持つ必要がある。
+ * 種そのものに意味はなく、並びを決める以外には使わない。保存できない環境（プライベート
+ * ブラウズ等）ではその場の乱数を使う＝リロードで並びが変わるだけで、投票はできる。
+ */
+const SHUFFLE_SEED_KEY = "mrcv_shuffle_seed";
+
+function loadShuffleSeed(): string {
+  const fresh = () => {
+    const buf = new Uint32Array(4);
+    crypto.getRandomValues(buf);
+    return Array.from(buf, (n) => n.toString(36)).join("");
+  };
+  try {
+    const saved = localStorage.getItem(SHUFFLE_SEED_KEY);
+    if (saved) return saved;
+    const seed = fresh();
+    localStorage.setItem(SHUFFLE_SEED_KEY, seed);
+    return seed;
+  } catch {
+    return fresh();
+  }
+}
+
 type Props = {
   slug: string;
+  pollId: string;
   options: PollOption[];
+  /** true なら候補を投票者ごとにランダムな順で見せる（poll.shuffle_options）。 */
+  shuffleOptions: boolean;
   /** このブラウザの送信済み順位（サーバが voter_key で解決）。非 null なら投票済み画面から開く */
   submittedRankings: string[] | null;
   /** 受付中に途中経過（結果ページ）を見られる poll か。done 画面のリンク出し分けに使う */
@@ -130,7 +161,14 @@ function settleOffset(meta: DragMeta, target: number): number {
  * 投票は1ブラウザ1票。受付中は「順位を変更する」で done → rank に戻り、何度でも
  * 上書き再投票できる（最後の送信が有効）。
  */
-export default function VoteClient({ slug, options, submittedRankings, showLiveCount }: Props) {
+export default function VoteClient({
+  slug,
+  pollId,
+  options: sortedOptions,
+  shuffleOptions,
+  submittedRankings,
+  showLiveCount,
+}: Props) {
   const router = useRouter();
   // 送信済みなら「投票済み」画面（done）で開く（受付中はそこから再編集できる）。
   const [phase, setPhase] = useState<Phase>(submittedRankings ? "done" : "rank");
@@ -145,6 +183,21 @@ export default function VoteClient({ slug, options, submittedRankings, showLiveC
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectionAnnouncement, setSelectionAnnouncement] = useState("");
+
+  // ランダム表示の種はブラウザにしかないので、マウント後に決める。それまでは候補を
+  // 見せない（作成順で一瞬描いてから並べ替えると、先頭の候補が目に入ってしまう）。
+  const [shuffleSeed, setShuffleSeed] = useState<string | null>(null);
+  useEffect(() => {
+    if (shuffleOptions) setShuffleSeed(loadShuffleSeed());
+  }, [shuffleOptions]);
+  const optionsReady = !shuffleOptions || shuffleSeed !== null;
+  const options = useMemo(
+    () =>
+      shuffleOptions && shuffleSeed
+        ? seededShuffle(sortedOptions, `${shuffleSeed}:${pollId}`)
+        : sortedOptions,
+    [sortedOptions, shuffleOptions, shuffleSeed, pollId]
+  );
 
   const optById = useMemo(() => new Map(options.map((o) => [o.id, o])), [options]);
   const poolItems = useMemo(() => options.filter((o) => !order.includes(o.id)), [options, order]);
@@ -586,7 +639,7 @@ export default function VoteClient({ slug, options, submittedRankings, showLiveC
         <b className="text-[13px] text-tm-teal-deep">
           選択肢 <span className="font-normal text-tm-teal-deep/70">（1つ以上）</span>
         </b>
-        <div className="flex flex-wrap gap-2">
+        <div className={`flex flex-wrap gap-2 ${optionsReady ? "" : "invisible"}`} aria-busy={!optionsReady}>
           {poolItems.map((o) => (
             <button
               key={o.id}
