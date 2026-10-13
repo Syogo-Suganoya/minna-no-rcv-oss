@@ -122,7 +122,11 @@ export default function Home() {
           <Link href="/demo" className="mx-1 text-tm-teal-deep underline underline-offset-2">
             開票デモ
           </Link>
-          から。
+          から。何千人・何万人の規模で試したいときは
+          <Link href="/demo/random" className="mx-1 text-tm-teal-deep underline underline-offset-2">
+            大人数の開票デモ
+          </Link>
+          で。
         </p>
       </div>
 
