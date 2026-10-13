@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import { Article, YoutubeLogo } from "@phosphor-icons/react/dist/ssr";
 import "./globals.css";
 import { BrandLockup } from "@/components/Brand";
 import { siteUrl } from "@/lib/siteUrl";
@@ -9,6 +10,13 @@ const DESCRIPTION =
 
 /** ソースコード（AGPL-3.0 第13条：ネットワーク越しの利用者にソース取得の機会を提供する）。 */
 const SOURCE_URL = "https://github.com/team-mirai/minna-no-rcv-oss";
+
+/** RCV の意義はアプリの中だけでは伝えきれないので、党の発信している解説へ案内する。 */
+const LEARN_LINKS = [
+  { kind: "youtube", label: "動画「みんなのRCV」", href: "https://www.youtube.com/watch?v=aAJmxQx3480" },
+  { kind: "youtube", label: "動画「選挙制度RCVとは？」", href: "https://www.youtube.com/watch?v=2b93MlJnLrw" },
+  { kind: "note", label: "note の解説記事", href: "https://note.com/team_mirai_jp/n/n1dc3c9b8b961" },
+] as const;
 
 /**
  * SNS シェア時のカード（OGP）について。
@@ -80,6 +88,30 @@ export default function RootLayout({
         <div className="flex-1">{children}</div>
         <footer className="border-t border-tm-border-soft bg-tm-gray-50">
           <div className="mx-auto w-full max-w-[560px] px-[18px] py-5 text-center text-[12.5px] leading-[1.8] text-tm-fg-muted">
+            <section aria-labelledby="footer-learn" className="mb-5 border-b border-tm-border-soft pb-5">
+              <h2 id="footer-learn" className="m-0 text-[13px] font-bold tracking-[0.04em] text-tm-ink">
+                RCV についてもっと知る
+              </h2>
+              <ul className="m-0 mt-2.5 flex list-none flex-col items-center gap-1.5 p-0">
+                {LEARN_LINKS.map((l) => (
+                  <li key={l.href}>
+                    <a
+                      href={l.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-tm-teal-deep underline underline-offset-2"
+                    >
+                      {l.kind === "youtube" ? (
+                        <YoutubeLogo size={16} weight="fill" aria-hidden />
+                      ) : (
+                        <Article size={16} weight="fill" aria-hidden />
+                      )}
+                      {l.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
             <p className="m-0">
               みんなのRCV は、優先順位付投票を誰でも開催できる無料ツール（プロトタイプ）です。
             </p>
