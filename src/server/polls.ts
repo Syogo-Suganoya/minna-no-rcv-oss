@@ -20,6 +20,8 @@ export type PublicPoll = {
   results_open_at: string | null;
   require_captcha: boolean;
   show_live_count: boolean;
+  /** true なら投票画面の候補を投票者ごとにランダムな順で見せる（features/rcv/shuffle.ts）。 */
+  shuffle_options: boolean;
   created_at: string;
 };
 
@@ -45,7 +47,7 @@ export type SubmitResult =
   | "rate_limited";
 
 const PUBLIC_COLS =
-  "id, slug, title, description, status, close_at, results_open_at, require_captcha, show_live_count, created_at";
+  "id, slug, title, description, status, close_at, results_open_at, require_captcha, show_live_count, shuffle_options, created_at";
 
 // 会場スクリーン/バー用のパレット（選択肢に順に割り当てる）。
 const PALETTE = [
@@ -61,6 +63,8 @@ export type CreatePollInput = {
   options: string[];
   requireCaptcha?: boolean;
   showLiveCount?: boolean;
+  /** 候補を投票者ごとにランダムな順で見せるか。未指定ならランダム。 */
+  shuffleOptions?: boolean;
   closeAt?: string | null;
   /** 結果公開（ISO 8601）。未指定・null なら締切と同時に公開する。 */
   resultsOpenAt?: string | null;
@@ -122,6 +126,7 @@ export async function createPoll(
         description,
         require_captcha: input.requireCaptcha ?? false,
         show_live_count: input.showLiveCount ?? true,
+        shuffle_options: input.shuffleOptions ?? true,
         close_at: closeAt,
         results_open_at: resultsOpenAt,
         admin_key_hash,
@@ -277,6 +282,34 @@ export async function publishResultsNow(pollId: string): Promise<void> {
     .update({ results_open_at: new Date().toISOString() })
     .eq("id", pollId);
   if (error) throw error;
+}
+
+// ── 候補の表示順（管理者）──────────────────────────────────────────────────
+
+/**
+ * 候補の表示順（sort_order）と、投票者ごとのランダム表示の有無を更新する。
+ *
+ * 表示順は集計に影響しない（tallyRcv のくじ順は poll_id のハッシュで決まる）ので、
+ * 受付中でも変えてよい。optionIds はこの poll の候補を過不足なく並べたもので、
+ * 違えば reorder_poll_options が何もせず false を返す。
+ */
+export async function updateOptionDisplay(
+  pollId: string,
+  optionIds: string[],
+  shuffleOptions: boolean
+): Promise<boolean> {
+  const { data: ok, error } = await admin().rpc("reorder_poll_options", {
+    p_poll_id: pollId,
+    p_option_ids: optionIds,
+  });
+  if (error) throw error;
+  if (!ok) return false;
+  const { error: uerr } = await admin()
+    .from("poll")
+    .update({ shuffle_options: shuffleOptions })
+    .eq("id", pollId);
+  if (uerr) throw uerr;
+  return true;
 }
 
 // ── 集計 ────────────────────────────────────────────────────────────────────

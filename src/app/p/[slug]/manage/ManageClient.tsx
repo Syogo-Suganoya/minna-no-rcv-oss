@@ -7,6 +7,7 @@ import { closePollAction, publishResultsAction } from "@/app/actions";
 import type { PollStatus } from "@/server/polls";
 import { formatCloseAt } from "@/lib/closeAt";
 import { Modal } from "@/components/Modal";
+import { OptionOrderEditor } from "./OptionOrderEditor";
 import {
   ArrowClockwise,
   ChartBar,
@@ -83,6 +84,8 @@ export default function ManageClient({
   resultsOpenAt,
   resultsOpen,
   ballotCount,
+  options,
+  shuffleOptions,
   shareUrl,
   adminUrl,
   justCreated,
@@ -99,6 +102,10 @@ export default function ManageClient({
   /** いま結果を見せてよいか（締切済み かつ 結果公開の時刻を過ぎている）。 */
   resultsOpen: boolean;
   ballotCount: number;
+  /** 候補（表示順＝sort_order 順）。 */
+  options: Array<{ id: string; label: string }>;
+  /** 投票者ごとにランダムな順で見せるか。 */
+  shuffleOptions: boolean;
   shareUrl: string;
   adminUrl: string;
   justCreated: boolean;
@@ -314,6 +321,16 @@ export default function ManageClient({
           </span>
         )}
       </div>
+
+      {/* ── 候補の表示順（受付中だけ。締切後は投票画面が無いので出さない）──── */}
+      {status === "open" && (
+        <OptionOrderEditor
+          slug={slug}
+          adminKey={adminKey}
+          options={options}
+          shuffleOptions={shuffleOptions}
+        />
+      )}
 
       {/* ── 締切の確認モーダル ──── */}
       <Modal open={confirmOpen} onClose={() => setConfirmOpen(false)} ariaLabel="締切の確認" variant="center">

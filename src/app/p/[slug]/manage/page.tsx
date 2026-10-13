@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
-import { getPollRowForAdmin, getBallotCount, ensureClosedIfDue } from "@/server/polls";
+import { getPollRowForAdmin, getPollBySlug, getBallotCount, ensureClosedIfDue } from "@/server/polls";
 import { verifyAdminKey } from "@/lib/adminKey";
 import { isResultsOpen } from "@/lib/closeAt";
 import ManageClient from "./ManageClient";
@@ -55,6 +55,7 @@ export default async function ManagePage({
   // close_at を過ぎていれば、この表示の時点で締切を確定させる（管理ページが「受付中」の
   // まま見え続けないように）。受理側は close_at 到達で既に拒否している。
   const status = await ensureClosedIfDue(row);
+  const options = (await getPollBySlug(slug))?.options ?? [];
 
   return (
     <ManageClient
@@ -66,6 +67,8 @@ export default async function ManagePage({
       resultsOpenAt={row.results_open_at}
       resultsOpen={isResultsOpen(status, row.results_open_at)}
       ballotCount={ballotCount}
+      options={options.map((o) => ({ id: o.id, label: o.label }))}
+      shuffleOptions={row.shuffle_options}
       shareUrl={shareUrl}
       adminUrl={adminUrl}
       justCreated={created === "1"}

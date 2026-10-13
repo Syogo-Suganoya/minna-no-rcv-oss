@@ -51,6 +51,8 @@ export default function CreatePollForm() {
   const [description, setDescription] = useState("");
   const [options, setOptions] = useState<string[]>(["", ""]);
   const [showLiveCount, setShowLiveCount] = useState(true);
+  // 先頭ほど選ばれやすい順序効果を避けるため、既定は投票者ごとにランダム表示。
+  const [shuffleOptions, setShuffleOptions] = useState(true);
   // 締切（任意）。空文字＝締切なし。datetime-local はブラウザのローカル時刻で持つ。
   const [closeAtLocal, setCloseAtLocal] = useState("");
   // 結果公開（任意）。空文字＝締切と同時に公開。締切を決めたときだけ指定できる。
@@ -138,6 +140,7 @@ export default function CreatePollForm() {
           description: description.trim() || undefined,
           options: cleaned,
           showLiveCount,
+          shuffleOptions,
           closeAt,
           resultsOpenAt,
         });
@@ -334,6 +337,22 @@ export default function CreatePollForm() {
           </div>
         )}
       </div>
+
+      {/* 候補の表示順 */}
+      <label className="flex cursor-pointer items-start gap-3 rounded-[16px] border border-tm-border-soft bg-white p-4">
+        <input
+          type="checkbox"
+          checked={shuffleOptions}
+          onChange={(e) => setShuffleOptions(e.target.checked)}
+          className="mt-1 h-4.5 w-4.5 accent-[var(--tm-teal)]"
+        />
+        <span className="flex flex-col gap-0.5">
+          <b className="text-[14px]">候補を人ごとにランダムな順で表示する</b>
+          <span className="text-[12.5px] leading-[1.7] text-tm-fg-muted">
+            全員が同じ並びで見ると、上にある候補ほど選ばれやすくなります。オフにすると、入力した順のまま表示します（管理ページからあとで変えられます）。
+          </span>
+        </span>
+      </label>
 
       {/* 公開設定 */}
       <label className="flex cursor-pointer items-start gap-3 rounded-[16px] border border-tm-border-soft bg-white p-4">
