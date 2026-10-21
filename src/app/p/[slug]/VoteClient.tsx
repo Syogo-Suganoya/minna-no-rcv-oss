@@ -10,7 +10,6 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
-import { useRouter } from "next/navigation";
 import { submitBallotAction } from "@/app/actions";
 import type { PollOption, SubmitResult } from "@/server/polls";
 import { Modal } from "@/components/Modal";
@@ -132,7 +131,6 @@ function settleOffset(meta: DragMeta, target: number): number {
  * 上書き再投票できる（最後の送信が有効）。
  */
 export default function VoteClient({ slug, options, submittedRankings, showLiveCount }: Props) {
-  const router = useRouter();
   // 送信済みなら「投票済み」画面（done）で開く（受付中はそこから再編集できる）。
   const [phase, setPhase] = useState<Phase>(submittedRankings ? "done" : "rank");
   // 順位（option_id の配列・先頭が1位）。選択肢のタップで1位から積んでいく＝最初は空。
@@ -144,11 +142,16 @@ export default function VoteClient({ slug, options, submittedRankings, showLiveC
   // 送信成功の直後だけ開く受付完了ポップアップ（投票箱アニメ）。閉じると done 画面が残る。
   const [doneOpen, setDoneOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  // id は同じ文言のエラーが続いたときも別ノードとして描き直し、再度読み上げさせるため
-  const [error, setErrorState] = useState<{ text: string; id: number } | null>(null);
+  // id は同じ文言のエラーが続いたときも別ノードとして描き直し、再度読み上げさせるため。
+  // resultsLink は締切後の送信で、エラー文に結果ページへのリンクを添えるか
+  const [error, setErrorState] = useState<{
+    text: string;
+    id: number;
+    resultsLink: boolean;
+  } | null>(null);
   const errorSeq = useRef(0);
-  const setError = useCallback((text: string | null) => {
-    setErrorState(text === null ? null : { text, id: ++errorSeq.current });
+  const setError = useCallback((text: string | null, resultsLink = false) => {
+    setErrorState(text === null ? null : { text, id: ++errorSeq.current, resultsLink });
   }, []);
   const [selectionAnnouncement, setSelectionAnnouncement] = useState("");
 
@@ -463,18 +466,16 @@ export default function VoteClient({ slug, options, submittedRankings, showLiveC
         setPhase("done");
         setDoneOpen(true);
       } else {
-        setError(getSubmitErrorMessage(r));
-        // 締切は結果ページへ自動で移る。エラーが読み上げられる時間を取ってから遷移する
-        if (r === "poll_closed") {
-          setTimeout(() => router.push(`/p/${slug}/results`), 3000);
-        }
+        // 締切は自動で結果ページへ移さず、リンクを添える。読み上げの途中で画面が
+        // 変わらないようにするため（時間制限を設けない・WCAG 2.2.1）
+        setError(getSubmitErrorMessage(r), r === "poll_closed");
       }
     } catch {
       setError(getSubmitErrorMessage("network_error"));
     } finally {
       setSubmitting(false);
     }
-  }, [slug, order, lastSubmitted, router, setError]);
+  }, [slug, order, lastSubmitted, setError]);
 
   // done →「順位を変更する」→ rank。order は受理済み順位のまま＝そこから編集を始める。
   const startEdit = useCallback(() => {
@@ -698,6 +699,17 @@ export default function VoteClient({ slug, options, submittedRankings, showLiveC
             className="rounded-[10px] bg-red-50 px-3 py-2 text-center text-[13px] text-tm-red ring-1 ring-inset ring-red-200 m-0"
           >
             {error.text}
+            {error.resultsLink && (
+              <>
+                {" "}
+                <a
+                  href={`/p/${slug}/results`}
+                  className="font-bold text-tm-red underline underline-offset-2"
+                >
+                  結果ページを見る
+                </a>
+              </>
+            )}
           </p>
         )}
       </div>

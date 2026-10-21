@@ -11,7 +11,7 @@ export type SubmitFailure = Exclude<SubmitResult, "ok"> | "network_error";
 export function getSubmitErrorMessage(result: SubmitFailure): string {
   switch (result) {
     case "poll_closed":
-      return "この投票は締め切られたため、送信できませんでした。結果ページへ移動します…";
+      return "この投票は締め切られたため、送信できませんでした。結果は結果ページでご確認ください。";
     case "captcha_required":
       return "この投票は人間確認が必要な設定ですが、確認機能が未対応のため送信できません。投票の作成者にお問い合わせください。";
     case "poll_not_found":

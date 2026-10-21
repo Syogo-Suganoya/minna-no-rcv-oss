@@ -29,7 +29,7 @@ describe("getSubmitErrorMessage", () => {
     for (const r of FAILURES) {
       assert.match(
         getSubmitErrorMessage(r),
-        /お試しください|ご確認ください|お問い合わせください|移動します/,
+        /お試しください|ご確認ください|お問い合わせください/,
         r
       );
     }
