@@ -584,9 +584,11 @@ export default function VoteClient({ slug, options, submittedRankings, showLiveC
       </b>
 
       <div className="flex flex-col gap-2">
-        <h3 className="m-0 text-[13px] font-bold text-tm-teal-deep">
-          選択肢 <span className="font-normal text-tm-teal-deep/70">（1つ以上）</span>
-        </h3>
+        {/* 補足は見出しの外に置き、見出しの読み上げ名を「選択肢」だけにする */}
+        <div className="text-[13px] text-tm-teal-deep">
+          <h3 className="m-0 inline font-bold">選択肢</h3>{" "}
+          <span className="text-tm-teal-deep/70">（1つ以上）</span>
+        </div>
         <div className="flex flex-wrap gap-2">
           {poolItems.map((o) => (
             <button
@@ -611,14 +613,15 @@ export default function VoteClient({ slug, options, submittedRankings, showLiveC
       </p>
 
       <div className="flex flex-col gap-2">
-        <h3 className="m-0 text-[13px] font-bold text-tm-teal-deep">
-          あなたの順位{" "}
-          <span className="text-[12px] font-normal text-tm-teal-deep/70">
+        <div className="text-[13px] text-tm-teal-deep">
+          <h3 className="m-0 inline font-bold">あなたの順位</h3>{" "}
+          <span className="text-[12px] text-tm-teal-deep/70">
             （ドラッグで並べ替え・
-            <X size={11} className="inline align-[-1px]" weight="bold" />
+            <X size={11} className="inline align-[-1px]" weight="bold" aria-hidden="true" />
+            <span className="sr-only">×ボタン</span>
             で取り消し）
           </span>
-        </h3>
+        </div>
         {order.length === 0 ? (
           <div className="border border-dashed border-tm-gray-300 bg-white rounded-[10px] px-3.5 py-[13px] text-center text-[13px] leading-relaxed text-tm-gray-500">
             まだ選ばれていません
